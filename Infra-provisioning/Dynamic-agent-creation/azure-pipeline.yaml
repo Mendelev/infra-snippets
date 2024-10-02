@@ -23,7 +23,7 @@ jobs:
     inputs:
       scriptSource: 'filePath'
       scriptPath: 'Infra-provisioning/Dynamic-agent-creation/manage_vm.py'
-      arguments: 'criar ami-0250c4c522b9573af'
+      arguments: 'criar ami-01c3b2b5a7663b7aa'
     name: runScriptThatCreatesMachine
     continueOnError: false  # Garantir que o job falhe se algo der errado
     env:  # Passando as variáveis de ambiente da AWS corretamente
