@@ -48,7 +48,6 @@ jobs:
     #     versionSpec: '3.x'  # Usar versão adequada do Python
     #     addToPath: true
     - script: |
-        pip3 install -r requirements.txt
         python /home/ubuntu/my_script.py
       displayName: 'Run my_script.py script'
 
