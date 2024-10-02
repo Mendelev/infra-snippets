@@ -1,0 +1,77 @@
+trigger: none
+pr: none
+
+resources:
+- repo: self
+
+pool:
+  vmImage: ubuntu-latest
+
+jobs:
+- job: CreateMachine
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+  - checkout: self
+  - bash: |
+      cd Infra-provisioning/Dynamic-agent-creation/
+      pip3 install -r requirements.txt
+  - task: PythonScript@0
+    inputs:
+      scriptSource: 'filePath'
+      scriptPath: 'Infra-provisioning/Dynamic-agent-creation/manage_vm.py'
+      arguments: 'criar ami-0bea3f7ed4a78ae31'
+    name: runScriptThatCreatesMachine
+  - bash: |
+        sleep 180s
+
+- job: GrabData
+  dependsOn: CreateMachine
+  condition: and(succeeded('CreateMachine'))
+  variables:
+    InstanceID: $[ dependencies.CreateMachine.outputs['runScriptThatCreatesMachine.INSTANCE_ID'] ]
+    # Variáveis AWS como secretas, você pode configurá-las no pipeline do Azure DevOps
+    AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+    AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+    AWS_REGION: $(AWS_REGION) # Substitua pela região adequada
+  pool:
+    name: Default
+    demands:
+    - agent.name -equals my-agent-$(InstanceID)
+  steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.x'  # Usar versão adequada do Python
+        addToPath: true
+    - script: |
+        pip3 install -r requirements.txt
+        python manage_vm.py
+      displayName: 'Run manage_vm.py script'
+      env:
+        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+        AWS_REGION: $(AWS_REGION)
+        # Outras variáveis de ambiente necessárias
+
+
+## Job that deletes the windows machine on AWS
+
+- job: TerminateMachine
+  dependsOn:
+    - CreateMachine 
+    - GrabData
+  condition: succeeded('CreateMachine')
+  variables:
+    InstanceID: $[ dependencies.CreateMachine.outputs['runScriptThatCreatesMachine.INSTANCE_ID'] ]
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+  - checkout: self
+  - bash: |
+      cd Infra-provisioning/Dynamic-agent-creation/
+      pip3 install -r requirements.txt
+  - task: PythonScript@0
+    inputs:
+      scriptSource: 'filePath'
+      scriptPath: 'Infra-provisioning/Dynamic-agent-creation/manage_vm.py'
+      arguments: "excluir $(InstanceID)"
