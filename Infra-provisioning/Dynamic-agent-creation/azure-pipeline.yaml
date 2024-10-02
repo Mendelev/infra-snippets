@@ -48,7 +48,7 @@ jobs:
     #     versionSpec: '3.x'  # Usar versão adequada do Python
     #     addToPath: true
     - script: |
-        python /home/ubuntu/my_script.py
+        python3 /home/ubuntu/my_script.py
       displayName: 'Run my_script.py script'
 
 ## Job that deletes the windows machine on AWS
