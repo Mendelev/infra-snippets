@@ -27,7 +27,7 @@ jobs:
 
 - job: GrabData
   dependsOn: CreateMachine
-  condition: and(succeeded('CreateMachine'))
+  condition: succeeded('CreateMachine')
   variables:
     InstanceID: $[ dependencies.CreateMachine.outputs['runScriptThatCreatesMachine.INSTANCE_ID'] ]
     # Variáveis AWS como secretas, você pode configurá-las no pipeline do Azure DevOps
