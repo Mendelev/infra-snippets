@@ -23,7 +23,7 @@ jobs:
     inputs:
       scriptSource: 'filePath'
       scriptPath: 'Infra-provisioning/Dynamic-agent-creation/manage_vm.py'
-      arguments: 'criar ami-01c3b2b5a7663b7aa'
+      arguments: 'criar $(AMI_ID)'
     name: runScriptThatCreatesMachine
     continueOnError: false  # Garantir que o job falhe se algo der errado
     env:  # Passando as variáveis de ambiente da AWS corretamente
@@ -43,10 +43,6 @@ jobs:
     demands:
     - agent.name -equals my-agent-$(InstanceID)
   steps:
-    # - task: UsePythonVersion@0
-    #   inputs:
-    #     versionSpec: '3.x'  # Usar versão adequada do Python
-    #     addToPath: true
     - script: |
         python3 /home/ubuntu/my_script.py
       displayName: 'Run my_script.py script'
