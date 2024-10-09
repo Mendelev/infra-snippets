@@ -7,6 +7,9 @@ resources:
 pool:
   vmImage: ubuntu-latest
 
+variables:
+  - group: AWS-EC2
+
 jobs:
 - job: CreateMachine
   pool:
@@ -20,39 +23,29 @@ jobs:
     inputs:
       scriptSource: 'filePath'
       scriptPath: 'Infra-provisioning/Dynamic-agent-creation/manage_vm.py'
-      arguments: 'criar ami-0bea3f7ed4a78ae31'
+      arguments: 'criar $(AMI_ID)'
     name: runScriptThatCreatesMachine
+    continueOnError: false  # Garantir que o job falhe se algo der errado
+    env:  # Passando as variáveis de ambiente da AWS corretamente
+      AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+      AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+      AWS_REGION: $(AWS_REGION)
   - bash: |
         sleep 180s
 
 - job: GrabData
   dependsOn: CreateMachine
-  condition: and(succeeded('CreateMachine'))
+  condition: succeeded('CreateMachine')
   variables:
-    InstanceID: $[ dependencies.CreateMachine.outputs['runScriptThatCreatesMachine.INSTANCE_ID'] ]
-    # Variáveis AWS como secretas, você pode configurá-las no pipeline do Azure DevOps
-    AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-    AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
-    AWS_REGION: $(AWS_REGION) # Substitua pela região adequada
+    InstanceID: $[ dependencies.CreateMachine.outputs['runScriptThatCreatesMachine.INSTANCE_ID'] ]    
   pool:
     name: Default
     demands:
     - agent.name -equals my-agent-$(InstanceID)
   steps:
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '3.x'  # Usar versão adequada do Python
-        addToPath: true
     - script: |
-        pip3 install -r requirements.txt
-        python manage_vm.py
-      displayName: 'Run manage_vm.py script'
-      env:
-        AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
-        AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
-        AWS_REGION: $(AWS_REGION)
-        # Outras variáveis de ambiente necessárias
-
+        python3 /home/ubuntu/my_script.py
+      displayName: 'Run my_script.py script'
 
 ## Job that deletes the windows machine on AWS
 
@@ -75,3 +68,8 @@ jobs:
       scriptSource: 'filePath'
       scriptPath: 'Infra-provisioning/Dynamic-agent-creation/manage_vm.py'
       arguments: "excluir $(InstanceID)"
+    continueOnError: false  # Garantir que o job falhe se algo der errado
+    env:  # Passando as variáveis de ambiente da AWS corretamente
+      AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+      AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+      AWS_REGION: $(AWS_REGION)
